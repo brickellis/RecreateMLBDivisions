@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MLB Division Reorganizer</title>
+    <style>
+      * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #DDDDDD;
+            color: black;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #000000;
+            font-size: 2.5em;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 300px 1fr 300px;
+            gap: 30px;
+            margin-bottom: 40px;
+            align-items: start;
+        }
+
+        .left-divisions {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .right-divisions {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .center-column {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .map-container {
+            position: relative;
+            text-align: center;
+            border-radius: 15px;
+        }
+
+        .map {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+            position: relative;
+        }
+
+        .team-logo {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            border-radius: 50%;
+            border: 2px solid #000;
+            transition: all 0.3s ease;
+            z-index: 10;
+            background-color: #FFFFFF;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .team-logo img {
+            width: 30px;
+            height: 30px;
+            object-fit: contain;
+        }
+
+        .team-logo:hover {
+	      background: #FFFFFF;
+        }
+
+        .team-logo:active {
+            cursor: pointer;
+        }
+
+        .division {
+            background: #DDDDDD;
+            border-radius: 15px;
+            padding: 20px;
+            border: 2px solid #000000;
+        }
+
+        /* Division-specific colors */
+        .division[data-division="1"] {
+            background: #FF6B6B;
+            border-color: #FF4757;
+        }
+
+        .division[data-division="2"] {
+            background: #4ECDC4;
+            border-color: #2ED573;
+        }
+
+        .division[data-division="3"] {
+            background: #45B7D1;
+            border-color: #3742FA;
+        }
+
+        .division[data-division="4"] {
+            background: #FFA726;
+            border-color: #FF6348;
+        }
+
+        .division[data-division="5"] {
+            background: #AB47BC;
+            border-color: #8E24AA;
+        }
+
+        .division[data-division="6"] {
+            background: #66BB6A;
+            border-color: #43A047;
+        }
+
+        .division h3 {
+            text-align: center;
+            margin-bottom: 15px;
+            color: #000;
+            font-size: 1.2em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .division-slots {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .slot {
+            width: 80px;
+            height: 80px;
+            border: 2px solid #000000;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+            margin: 0 auto;
+        }
+
+        .slot .team-logo {
+            position: static;
+            width: 60px;
+            height: 60px;
+            border: 2px solid #000000;
+        }
+
+        .slot .team-logo img {
+            width: 45px;
+            height: 45px;
+        }
+
+        .rejected-container {
+            border-radius: 15px;
+            padding: 20px;
+            border: 2px solid #000;
+            text-align: center;
+            background: #CCCCCC;
+        }
+
+        .rejected-container h3 {
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .rejected-slots {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 15px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Team logo colors based on division */
+        .team-logo.division-1 { background-color: #FF6B6B !important; }
+        .team-logo.division-2 { background-color: #4ECDC4 !important; }
+        .team-logo.division-3 { background-color: #45B7D1 !important; }
+        .team-logo.division-4 { background-color: #FFA726 !important; }
+        .team-logo.division-5 { background-color: #AB47BC !important; }
+        .team-logo.division-6 { background-color: #66BB6A !important; }
+        .team-logo.rejected { background-color: #999999 !important; }
+        .team-logo.unselected { background-color: #FFFFFF !important; }
+
+        @media (max-width: 1200px) {
+            .main-layout {
+                grid-template-columns: 250px 1fr 250px;
+                gap: 20px;
+            }
+        }
+
+        @media (max-width: 1000px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .left-divisions, .right-divisions {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 20px;
+            }
+            
+            .rejected-slots {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .left-divisions, .right-divisions {
+                grid-template-columns: 1fr;
+            }
+            
+            .rejected-slots {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .team-logo {
+                width: 30px;
+                height: 30px;
+            }
+            
+            .team-logo img {
+                width: 22px;
+                height: 22px;
+            }
+        }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="main-layout">
+        <!-- Left Divisions (1, 2, 3) -->
+        <div class="left-divisions">
+          <div class="division" data-division="1">
+            <h3>Division 1</h3>
+            <div class="division-slots">
+              <div class="slot" data-division="1" data-slot="1"></div>
+              <div class="slot" data-division="1" data-slot="2"></div>
+              <div class="slot" data-division="1" data-slot="3"></div>
+              <div class="slot" data-division="1" data-slot="4"></div>
+            </div>
+          </div>
+          <div class="division" data-division="2">
+            <h3>Division 2</h3>
+            <div class="division-slots">
+              <div class="slot" data-division="2" data-slot="1"></div>
+              <div class="slot" data-division="2" data-slot="2"></div>
+              <div class="slot" data-division="2" data-slot="3"></div>
+              <div class="slot" data-division="2" data-slot="4"></div>
+            </div>
+          </div>
+          <div class="division" data-division="3">
+            <h3>Division 3</h3>
+            <div class="division-slots">
+              <div class="slot" data-division="3" data-slot="1"></div>
+              <div class="slot" data-division="3" data-slot="2"></div>
+              <div class="slot" data-division="3" data-slot="3"></div>
+              <div class="slot" data-division="3" data-slot="4"></div>
+            </div>
+          </div>
+        </div>
+        <!-- Center Column with Map and Rejected Teams -->
+        <div class="center-column">
+          <h1>MLB Division Reorganizer</h1>
+          <div class="map-container">
+            <img src="/map.svg" alt="US Map" class="map" id="map">
+          </div>
+          <!-- Rejected Teams directly under the map -->
+          <div class="rejected-container">
+            <h3>Rejected Teams</h3>
+            <div class="rejected-slots">
+              <div class="slot" data-rejected="1"></div>
+              <div class="slot" data-rejected="2"></div>
+              <div class="slot" data-rejected="3"></div>
+              <div class="slot" data-rejected="4"></div>
+              <div class="slot" data-rejected="5"></div>
+              <div class="slot" data-rejected="6"></div>
+            </div>
+          </div>
+        </div>
+        <!-- Right Divisions (4, 5, 6) -->
+        <div class="right-divisions">
+          <div class="division" data-division="4">
+            <h3>Division 4</h3>
+            <div class="division-slots">
+              <div class="slot" data-division="4" data-slot="1"></div>
+              <div class="slot" data-division="4" data-slot="2"></div>
+              <div class="slot" data-division="4" data-slot="3"></div>
+              <div class="slot" data-division="4" data-slot="4"></div>
+            </div>
+          </div>
+          <div class="division" data-division="5">
+            <h3>Division 5</h3>
+            <div class="division-slots">
+              <div class="slot" data-division="5" data-slot="1"></div>
+              <div class="slot" data-division="5" data-slot="2"></div>
+              <div class="slot" data-division="5" data-slot="3"></div>
+              <div class="slot" data-division="5" data-slot="4"></div>
+            </div>
+          </div>
+          <div class="division" data-division="6">
+            <h3>Division 6</h3>
+            <div class="division-slots">
+              <div class="slot" data-division="6" data-slot="1"></div>
+              <div class="slot" data-division="6" data-slot="2"></div>
+              <div class="slot" data-division="6" data-slot="3"></div>
+              <div class="slot" data-division="6" data-slot="4"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      const teamPositions = {
+    'Arizona Diamondbacks': { x: 20, y: 64, zoom: 1.0 }, // Done
+    'Atlanta Braves': { x: 73, y: 65, zoom: 1.0 }, // Done
+    'Baltimore Orioles': { x: 83, y: 41.4, zoom: 1.0 }, // Done
+    'Boston Red Sox': { x: 92, y: 26, zoom: 1.0 }, // Done
+    'Chicago Cubs': { x: 61, y: 36, zoom: 1.0 }, // Done
+    'Chicago White Sox': { x: 65, y: 36, zoom: 1.0 }, // Done
+    'Cincinnati Reds': { x: 71, y: 44, zoom: 1.0 }, // Done
+    'Cleveland Guardians': { x: 75, y: 36, zoom: 1.0 }, // Done
+    'Colorado Rockies': { x: 34, y: 44, zoom: 1.0 }, // Done
+    'Detroit Tigers': { x: 71.8, y: 31.5, zoom: 1.0 }, // Done
+    'Houston Astros': { x: 51.5, y: 81, zoom: 1.0 }, // Done
+    'Kansas City Royals': { x: 52.8, y: 47, zoom: 1.0 }, // Done
+    'Los Angeles Angels': { x: 9.5, y: 56, zoom: 1.0 }, // Done
+    'Los Angeles Dodgers': { x: 5.3, y: 56, zoom: 1.0 }, // Done
+    'Miami Marlins': { x: 83, y: 90, zoom: 1.0 }, // Done
+    'Milwaukee Brewers': { x: 63, y: 30, zoom: 1.0 }, // Done
+    'Minnesota Twins': { x: 54.5, y: 25, zoom: 1.0 }, // Done
+    'New York Mets': { x: 90, y: 34, zoom: 1.0 }, // Done
+    'New York Yankees': { x: 87, y: 29.5, zoom: 1.0 }, // Done
+    'Oakland Athletics': { x: 6.8, y: 38, zoom: 1.1 }, // Done
+    'Philadelphia Phillies': { x: 86, y: 37, zoom: 1.2 }, // Done
+    'Pittsburgh Pirates': { x: 79, y: 37, zoom: 1.0 }, // Done
+    'San Diego Padres': { x: 10, y: 63, zoom: 1.0 }, // Done
+    'San Francisco Giants': { x: 3, y: 41, zoom: 1.1 }, // Done
+    'Seattle Mariners': { x: 9, y: 8, zoom: 1.1 }, // Done
+    'St Louis Cardinals': { x: 60.5, y: 48, zoom: 1.0 }, // Done
+    'Tampa Bay Rays': { x: 78, y: 85, zoom: 1.0 }, // Done
+    'Texas Rangers': { x: 48, y: 71, zoom: 1.0 }, // Done
+    'Toronto Blue Jays': { x: 78, y: 25, zoom: 1.2 }, // Done
+    'Washington Nationals': { x: 82, y: 48, zoom: 1.0 } // Done
+};
+
+// Central state dictionary - each slot has its own key
+let divisionSlots = {};
+
+let draggedElement = null;
+
+// Initialize all slots as empty
+function initializeDivisionSlots() {
+    const slots = document.querySelectorAll('.slot');
+    slots.forEach((slot, index) => {
+        const slotId = slot.id || `slot-${index}`;
+        slot.id = slotId; // Ensure each slot has an ID
+        divisionSlots[slotId] = null; // null means empty
+    });
+}
+
+// Find which slot a team is currently in
+function findTeamSlot(teamName) {
+    for (const [slotId, assignedTeam] of Object.entries(divisionSlots)) {
+        if (assignedTeam === teamName) {
+            return slotId;
+        }
+    }
+    return null;
+}
+
+// Update the dictionary and trigger rerender with team switching logic
+function updateDivisionSlots(targetSlotId, draggedTeamName) {
+    const draggedTeamCurrentSlot = findTeamSlot(draggedTeamName);
+    const targetSlotCurrentTeam = divisionSlots[targetSlotId];
+    
+    if (targetSlotCurrentTeam) {
+        // There's a team in the target slot
+        if (draggedTeamCurrentSlot) {
+            // Both teams have slots - swap them
+            divisionSlots[draggedTeamCurrentSlot] = targetSlotCurrentTeam;
+            divisionSlots[targetSlotId] = draggedTeamName;
+        } else {
+            // Dragged team has no slot - move target team to unassigned, place dragged team
+            divisionSlots[targetSlotId] = draggedTeamName;
+        }
+    } else {
+        // Target slot is empty
+        if (draggedTeamCurrentSlot) {
+            // Clear dragged team's old slot
+            divisionSlots[draggedTeamCurrentSlot] = null;
+        }
+        // Place dragged team in target slot
+        divisionSlots[targetSlotId] = draggedTeamName;
+    }
+    
+    // Trigger rerender
+    renderAll();
+}
+
+// Remove team from all slots
+function removeTeamFromSlots(teamName) {
+    Object.keys(divisionSlots).forEach(key => {
+        if (divisionSlots[key] === teamName) {
+            divisionSlots[key] = null;
+        }
+    });
+    renderAll();
+}
+
+// Get team's current assignment status
+function getTeamStatus(teamName) {
+    for (const [slotId, assignedTeam] of Object.entries(divisionSlots)) {
+        if (assignedTeam === teamName) {
+            const slot = document.getElementById(slotId);
+            if (slot.dataset.division) {
+                return { type: 'division', value: slot.dataset.division };
+            } else if (slot.dataset.rejected) {
+                return { type: 'rejected', value: true };
+            }
+        }
+    }
+    return { type: 'unselected', value: null };
+}
+
+// Create remove button for team logos in slots
+function createRemoveButton(teamName) {
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'remove-btn';
+    removeBtn.innerHTML = '×';
+    removeBtn.title = 'Remove team';
+    
+    // Add CSS for the remove button
+    removeBtn.style.cssText = `
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #ff4444;
+        color: white;
+        border: none;
+        font-size: 12px;
+        font-weight: bold;
+        cursor: pointer;
+        display: none;
+        z-index: 10;
+        line-height: 1;
+        padding: 0;
+    `;
+    
+    removeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        removeTeamFromSlots(teamName);
+    });
+    
+    return removeBtn;
+}
+
+// Render all division slots
+function renderDivisionSlots() {
+    Object.keys(divisionSlots).forEach(slotId => {
+        const slot = document.getElementById(slotId);
+        const teamName = divisionSlots[slotId];
+        
+        // Clear slot
+        slot.innerHTML = '';
+        
+        // Add team logo if assigned
+        if (teamName) {
+            const logoContainer = document.createElement('div');
+            logoContainer.style.cssText = 'position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;';
+            
+            const logo = createTeamLogo(teamName, true); // true for slot version
+            const removeBtn = createRemoveButton(teamName);
+            
+            logoContainer.appendChild(logo);
+            logoContainer.appendChild(removeBtn);
+            
+            // Add hover events to show/hide remove button
+            logoContainer.addEventListener('mouseenter', () => {
+                removeBtn.style.display = 'block';
+            });
+            
+            logoContainer.addEventListener('mouseleave', () => {
+                removeBtn.style.display = 'none';
+            });
+            
+            slot.appendChild(logoContainer);
+        }
+    });
+}
+
+// Render all map team colors
+function renderMapColors() {
+    const mapLogos = document.querySelectorAll('.map-container .team-logo');
+    
+    mapLogos.forEach(logo => {
+        const teamName = logo.dataset.originalName;
+        const status = getTeamStatus(teamName);
+        
+        // Remove all status classes
+        logo.classList.remove('division-1', 'division-2', 'division-3', 'division-4', 'division-5', 'division-6', 'rejected', 'unselected');
+        
+        // Add appropriate class and handle visibility
+        if (status.type === 'division') {
+            logo.classList.add(`division-${status.value}`);
+            logo.style.display = 'flex';
+        } else if (status.type === 'rejected') {
+            logo.classList.add('rejected');
+            logo.style.display = 'none'; // Hide rejected teams on map
+        } else {
+            logo.classList.add('unselected');
+            logo.style.display = 'flex';
+        }
+    });
+}
+
+// Main render function - called whenever dictionary changes
+function renderAll() {
+    renderDivisionSlots();
+    renderMapColors();
+}
+
+// Create team logo element
+function createTeamLogo(teamName, isForSlot = false) {
+    const logoDiv = document.createElement('div');
+    logoDiv.className = 'team-logo';
+    logoDiv.draggable = true;
+    logoDiv.dataset.team = teamName.replace(/ /g, "_");
+    logoDiv.dataset.originalName = teamName;
+    
+    const img = document.createElement('img');
+    const teamKey = teamName.replace(/ /g, "_");
+    img.src = `teams/${teamKey}.svg`;
+    img.alt = teamName;
+    img.draggable = false; // Prevent the img from being draggable separately
+    
+    logoDiv.appendChild(img);
+    
+    if (!isForSlot) {
+        // Map positioning
+        const position = teamPositions[teamName];
+        logoDiv.style.left = `${position.x}%`;
+        logoDiv.style.top = `${position.y}%`;
+        logoDiv.style.transform = 'translate(-50%, -50%)';
+        
+        // Apply zoom scaling to inner image only
+        const baseImageSize = 30;
+        const scaledImageSize = baseImageSize * position.zoom;
+        img.style.width = `${scaledImageSize}px`;
+        img.style.height = `${scaledImageSize}px`;
+        
+        logoDiv.classList.add('unselected');
+    } else {
+        // Slot positioning
+        logoDiv.style.position = 'static';
+        logoDiv.style.left = 'auto';
+        logoDiv.style.top = 'auto';
+        logoDiv.style.transform = 'none';
+        
+        // Apply zoom scaling to inner image in slots too
+        const position = teamPositions[teamName];
+        const baseImageSize = 45; // Base slot image size
+        const scaledImageSize = baseImageSize * position.zoom;
+        img.style.width = `${scaledImageSize}px`;
+        img.style.height = `${scaledImageSize}px`;
+        
+        // Apply appropriate styling based on team status
+        const status = getTeamStatus(teamName);
+        if (status.type === 'division') {
+            logoDiv.classList.add(`division-${status.value}`);
+        } else if (status.type === 'rejected') {
+            logoDiv.classList.add('rejected');
+        }
+    }
+    
+    // Add drag event listeners
+    logoDiv.addEventListener('dragstart', handleDragStart);
+    logoDiv.addEventListener('dragend', handleDragEnd);
+    
+    return logoDiv;
+}
+
+// Initialize map teams
+function initializeMapTeams() {
+    const mapContainer = document.querySelector('.map-container');
+    
+    Object.keys(teamPositions).forEach(teamName => {
+        const logo = createTeamLogo(teamName, false);
+        mapContainer.appendChild(logo);
+    });
+}
+
+// Drag handlers
+function handleDragStart(e) {
+    draggedElement = e.target;
+}
+
+function handleDragEnd(e) {
+    draggedElement = null;
+}
+
+// Drop zone handlers
+function setupDropZones() {
+    const slots = document.querySelectorAll('.slot');
+    
+    slots.forEach(slot => {
+        slot.addEventListener('dragover', handleDragOver);
+        slot.addEventListener('dragenter', handleDragEnter);
+        slot.addEventListener('dragleave', handleDragLeave);
+        slot.addEventListener('drop', handleDrop);
+    });
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+}
+
+function handleDragEnter(e) {
+    e.preventDefault();
+    let targetSlot = e.target;
+    
+    // Find the actual slot element if we're hovering over a team logo or container
+    while (targetSlot && !targetSlot.classList.contains('slot')) {
+        targetSlot = targetSlot.parentElement;
+    }
+    
+    if (targetSlot && targetSlot.classList.contains('slot')) {
+        targetSlot.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+    }
+}
+
+function handleDragLeave(e) {
+    let targetSlot = e.target;
+    
+    // Find the actual slot element
+    while (targetSlot && !targetSlot.classList.contains('slot')) {
+        targetSlot = targetSlot.parentElement;
+    }
+    
+    if (targetSlot && targetSlot.classList.contains('slot')) {
+        targetSlot.style.backgroundColor = '';
+    }
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    
+    let targetSlot = e.target;
+    
+    // Find the actual slot element if we dropped on a team logo or container
+    while (targetSlot && !targetSlot.classList.contains('slot')) {
+        targetSlot = targetSlot.parentElement;
+    }
+    
+    if (targetSlot) {
+        targetSlot.style.backgroundColor = '';
+    }
+    
+    if (draggedElement && targetSlot && targetSlot.classList.contains('slot')) {
+        const teamName = draggedElement.dataset.originalName;
+        const slotId = targetSlot.id;
+        
+        // Update the dictionary with new switching logic
+        updateDivisionSlots(slotId, teamName);
+    }
+}
+
+// Double-click to return team to map
+document.addEventListener('dblclick', (e) => {
+    if (e.target.classList.contains('team-logo') && e.target.closest('.slot')) {
+        const teamName = e.target.dataset.originalName;
+        removeTeamFromSlots(teamName);
+    }
+});
+
+// Initialize the application
+document.addEventListener('DOMContentLoaded', () => {
+    initializeDivisionSlots();
+    initializeMapTeams();
+    setupDropZones();
+    renderAll(); // Initial render
+});
+
+// Utility function to get current state (for debugging or external access)
+function getCurrentState() {
+    return { ...divisionSlots };
+}
+
+// Utility function to set state from external source
+function setState(newState) {
+    divisionSlots = { ...newState };
+    renderAll();
+}
+    </script>
+  </body>
+</html>
